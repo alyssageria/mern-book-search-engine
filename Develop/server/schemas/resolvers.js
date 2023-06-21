@@ -24,6 +24,44 @@ const resolvers = {
                 token,
                 user,
             };
+        },
+        addUser: async (parent, { username, email, password }) => {
+            const user = await User.create({ username, email, password });
+
+            const token = generateToken(user);
+
+            return {
+                token,
+                user
+            };
+        },
+        saveBook: async (parent, { input }, context) => {
+            if (!context.user) {
+                throw new AuthenticationError('You must be logged in to perform this action')
+            }
+
+            const user = await User.findByIdAndUpdate(
+                context.user.id,
+                { $push: { saveBooks: input } },
+                { new: true }
+            );
+
+            return user;
+        },
+        removeBook: async (parent, { bookId }, context) => {
+            if (!context.user) {
+                throw new AuthenticationError('You must be logged in to perform this action')
+            }
+
+            const user = await User.findByIdAndUpdate(
+                context.user.id,
+                { $pull: { savedBooks: { bookId } } },
+                { new: true }
+            );
+
+            return user;
         }
     }
 }
+
+module.exports = resolvers;
