@@ -1,5 +1,6 @@
 const { AuthenticationError } = require('apollo-server-express');
 const { User, Book } = require('../models');
+const { signToken } = require('../utils/auth');
 
 const resolvers = {
     Query: {
@@ -18,7 +19,7 @@ const resolvers = {
                 throw new AuthenticationError('Invalid email or password')
             }
 
-            const token = generateToken(user);
+            const token = signToken(user);
 
             return {
                 token,
@@ -28,21 +29,21 @@ const resolvers = {
         addUser: async (parent, { username, email, password }) => {
             const user = await User.create({ username, email, password });
 
-            const token = generateToken(user);
+            const token = signToken(user);
 
             return {
                 token,
                 user
             };
         },
-        saveBook: async (parent, { input }, context) => {
+        saveBook: async (parent, { bookData }, context) => {
             if (!context.user) {
                 throw new AuthenticationError('You must be logged in to perform this action')
             }
 
             const user = await User.findByIdAndUpdate(
-                context.user.id,
-                { $push: { saveBooks: input } },
+                context.user._id,
+                { $push: { savedBooks: bookData } },
                 { new: true }
             );
 
@@ -54,7 +55,7 @@ const resolvers = {
             }
 
             const user = await User.findByIdAndUpdate(
-                context.user.id,
+                context.user._id,
                 { $pull: { savedBooks: { bookId } } },
                 { new: true }
             );
